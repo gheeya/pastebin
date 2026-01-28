@@ -2,11 +2,13 @@ const express = require("express");
 const app = express();
 const dotenv = require("dotenv").config();
 const { v4: uuid } = require("uuid");
+const { connectDB } = require("./db/dbConnection");
 
 const PORT = process.env.PORT || 8000;
 
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
+connectDB();
 
 app.get("/api/healthz", (req, res) => {
   res.status(200).json({ status: true, msg: "The app health is optimal!!!" });
