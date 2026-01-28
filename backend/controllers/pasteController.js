@@ -64,10 +64,27 @@ const getPasteById = async (req, res) => {
                 "$max_views",
               ],
             },
-            exhausted: {
+            exhaustedViewCnt: {
               $cond: [
                 {
                   $eq: ["$max_views", 0],
+                },
+                true,
+                false,
+              ],
+            },
+            exhaustedTime: {
+              $cond: [
+                {
+                  $lte: [
+                    {
+                      $add: [
+                        "$createdAt",
+                        { $multiply: ["$ttl_seconds", 1000] },
+                      ],
+                    },
+                    "$$NOW",
+                  ],
                 },
                 true,
                 false,
@@ -78,7 +95,13 @@ const getPasteById = async (req, res) => {
       ],
       { new: true, updatePipeline: true },
     );
-    if (!paste || paste.exhausted) {
+    console.log("THIS IS THE PASTE WITH GIVEN ID", {
+      ...paste,
+      createdAt: paste.createdAt.toLocaleString("en-IN", {
+        timeZone: "Asia/Kolkata",
+      }),
+    });
+    if (!paste || paste.exhaustedViewCnt || paste.exhaustedTime) {
       return res.status(404).json({
         status: false,
         msg: "Paste with the given ID not found/expired",
@@ -117,7 +140,7 @@ const renderPaste = async (req, res) => {
     }
     const paste = await Paste.findById({ _id: id });
     console.log("This is the paste", paste);
-    if (!paste || paste.exhausted) {
+    if (!paste || paste.exhaustedViewCnt || paste.exhaustedTime) {
       return res.status(404).send(`<!DOCTYPE html>
         <html>
       <body>

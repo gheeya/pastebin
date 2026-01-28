@@ -15,7 +15,11 @@ const pasteSchema = new mongoose.Schema(
       type: Number,
       default: null,
     },
-    exhausted: {
+    exhaustedViewCnt: {
+      type: Boolean,
+      default: false,
+    },
+    exhaustedTime: {
       type: Boolean,
       default: false,
     },
