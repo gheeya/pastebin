@@ -1,5 +1,6 @@
 const Paste = require("../models/Paste.model");
 const mongoose = require("mongoose");
+const escapeHtml = require("escape-html");
 
 const checkHealth = (req, res) => {
   return res
@@ -97,4 +98,42 @@ const getPasteById = async (req, res) => {
   }
 };
 
-module.exports = { checkHealth, createPaste, getPasteById };
+const renderPaste = async (req, res) => {
+  try {
+    const id = req.params.id;
+    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).send(`<!DOCTYPE html>
+        <html>
+      <body>
+      <h1>400: Invalid/Missing ID</h1>
+      </body>
+    </html>`);
+    }
+    const paste = await Paste.findById({ _id: id });
+    console.log("This is the paste", paste);
+    if (!paste || paste.exhausted) {
+      return res.status(404).send(`<!DOCTYPE html>
+        <html>
+      <body>
+      <h1>404: Paste Not Found/Expired</h1>
+      </body>
+    </html>`);
+    }
+    res.status(200).send(`<!DOCTYPE html>
+    <html>
+    <body>
+    <p>${escapeHtml(paste.content)}</p>
+    </body>
+    </html>`);
+  } catch (error) {
+    console.log("ERROR RENDERING HTML", error.message);
+    res.status(500).send(`<!DOCTYPE html>
+    <html>
+    <body>
+    <h1>Internal Server Error</h1>
+    </body>
+    </html>`);
+  }
+};
+
+module.exports = { checkHealth, createPaste, getPasteById, renderPaste };
