@@ -1,0 +1,19 @@
+{
+  "name": "pastebin_backend",
+  "version": "1.0.0",
+  "description": "Backend for Pastebin",
+  "main": "app.js",
+  "scripts": {
+    "dev": "nodemon app.js"
+  },
+  "author": "gheeya",
+  "license": "ISC",
+  "devDependencies": {
+    "nodemon": "^3.1.11",
+    "uuid": "^13.0.0"
+  },
+  "dependencies": {
+    "dotenv": "^17.2.3",
+    "express": "^5.2.1"
+  }
+}
