@@ -84,10 +84,16 @@ const getPasteById = async (req, res) => {
         msg: "Paste with the given ID not found/expired",
       });
     }
+    let expires_at = paste.ttl_seconds
+      ? new Date(paste.createdAt + paste.ttl_seconds * 1000)
+      : "never";
+    expires_at = expires_at.toLocaleString("en-IN", {
+      timeZone: "Asia/Kolkata",
+    });
     const pasteOp = {
       content: paste.content,
       remaining_views: paste.max_views ?? "infinite",
-      expires_at: paste.ttl_seconds ?? "never",
+      expires_at,
     };
     res
       .status(200)
