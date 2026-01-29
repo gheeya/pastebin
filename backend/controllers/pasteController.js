@@ -53,7 +53,7 @@ const createPaste = async (req, res) => {
 
     return res.status(201).json({
       id: paste._id.toString(),
-      url: `/p/${paste._id}`,
+      url: `https://pastebin-backend-umber.vercel.app/p/${paste._id}`,
     });
   } catch (err) {
     console.error("ERROR CREATING PASTE", err);
