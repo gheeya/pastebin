@@ -61,10 +61,14 @@ function PasteForm() {
 
     const updatedFormData = {
       content: formContent.content,
-      ttl_seconds: formContent.ttl_seconds
-        ? Number(formContent.ttl_seconds)
-        : null,
-      max_views: formContent.max_views ? Number(formContent.max_views) : null,
+      ttl_seconds:
+        formContent.ttl_seconds === "" || Number(formContent.ttl_seconds) < 1
+          ? null
+          : Number(formContent.ttl_seconds),
+      max_views:
+        formContent.max_views === "" || Number(formContent.max_views) < 1
+          ? null
+          : Number(formContent.max_views),
     };
 
     const config = {
@@ -126,7 +130,7 @@ function PasteForm() {
             </label>
             <input
               type="number"
-              min={0}
+              min={1}
               className="border border-gray-400 h-10 w-80"
               value={formContent.ttl_seconds}
               onChange={handleContentChange}

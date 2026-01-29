@@ -14,7 +14,7 @@ function useFetch() {
         ...prev,
         loading: true,
       }));
-
+      console.log(config);
       const data = await api.request(config);
       setState({
         errorMsg: "",
