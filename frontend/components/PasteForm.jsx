@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { FiCopy } from "react-icons/fi";
 import useFetch from "../hooks/useFetch/useFetch";
+import PasteItem from "./PasteItem";
 
 function PasteForm() {
   const [formContent, setFormContent] = useState({
@@ -12,6 +13,14 @@ function PasteForm() {
   const [formSubmit, setFormSubmit] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fetchData, { loading }] = useFetch();
+  const [allPastes, setAllPastes] = useState([]);
+  useEffect(() => {
+    const config = { url: "/pastes", method: "GET" };
+    fetchData(config).then((data) => {
+      console.log("This is the returned data", [...data.data.pastes]);
+      setAllPastes(data.data.pastes);
+    });
+  }, [fetchData]);
 
   const handleContentChange = (e) => {
     setFormContent({ ...formContent, [e.target.name]: e.target.value });
@@ -142,7 +151,24 @@ function PasteForm() {
       <article className="paste-container flex flex-row justify-center items-center">
         <article className="paste w-170 h-160 flex flex-col justify-start items-center">
           <h2 className="text-lg font-semibold">Recent Pastes</h2>
-          <section className="h-130 w-150 border border-gray-400"></section>
+          <article className="h-130 w-150 border border-gray-400 rcnt-paste-container">
+            {loading ? (
+              <h2 className="text-center font-semibold text-red-600">
+                Loading ...
+              </h2>
+            ) : (
+              allPastes?.map((p) => {
+                return (
+                  <PasteItem
+                    key={p.id}
+                    id={p.id}
+                    content={p.content}
+                    createdAt={p.createdAt}
+                  />
+                );
+              })
+            )}
+          </article>
         </article>
       </article>
     </>
