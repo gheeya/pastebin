@@ -1,5 +1,17 @@
 @import "tailwindcss";
 
+* {
+  padding: 0;
+  box-sizing: border-box;
+  margin: 0;
+}
+
+html,
+body,
+#root {
+  height: 100%;
+}
+
 .primary-header {
   box-shadow: rgba(0, 0, 0, 0.18) 0px 2px 4px;
 }

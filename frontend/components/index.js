@@ -1,3 +1,4 @@
 import Header from "./Header";
+import PasteForm from "./PasteForm";
 
-export { Header };
+export { Header, PasteForm };
