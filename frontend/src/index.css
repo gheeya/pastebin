@@ -10,8 +10,32 @@ html,
 body,
 #root {
   height: 100%;
+  width: 100%;
+}
+
+#root {
+  display: flex;
+  flex-direction: column;
+}
+
+main {
+  flex: 1;
+  display: grid;
+  grid-template-rows: 100%;
+  grid-template-columns: 1fr 1fr;
+}
+
+.paste-form,
+.paste {
+  box-shadow: rgba(0, 0, 0, 0.35) 0px 5px 15px;
+}
+
+.paste-container h2 {
+  margin-top: 15px;
+  margin-bottom: 15px;
 }
 
 .primary-header {
   box-shadow: rgba(0, 0, 0, 0.18) 0px 2px 4px;
+  padding-left: 20px;
 }

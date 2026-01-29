@@ -29,14 +29,15 @@ function PasteForm() {
 
   return (
     <>
-      <article className="paste-form-container">
+      <article className="paste-form-container flex flex-row justify-center items-center">
         <form
-          className="w-170 h-160 border flex flex-col justify-evenly items-center paste-form"
+          className="w-170 h-160 flex flex-col justify-evenly items-center paste-form"
           onSubmit={handleSubmit}
         >
+          <h2 className="text-lg font-semibold">Create A Paste</h2>
           <section className="w-full flex flex-row justify-center items-center">
             <input
-              className="paste-url-container border border-gray h-10 w-130"
+              className="paste-url-container border border-gray-400 h-10 w-130"
               id="paste-url-container"
               name="paste-url-container"
               placeholder="Paste URL"
@@ -54,7 +55,7 @@ function PasteForm() {
           </section>
           <section className="w-full flex flex-row justify-center items-center">
             <textarea
-              className="paste-content-container w-150 h-100 border"
+              className="paste-content-container w-150 h-100 border border-gray-400"
               id="paste-content-container"
               name="paste-content-container"
               value={pasteContent}
@@ -76,6 +77,12 @@ function PasteForm() {
             Create Paste
           </button>
         </form>
+      </article>
+      <article className="paste-container flex flex-row justify-center items-center">
+        <article className="paste w-170 h-160 flex flex-col justify-start items-center">
+          <h2 className="text-lg font-semibold">Recent Pastes</h2>
+          <section className="h-130 w-150 border border-gray-400"></section>
+        </article>
       </article>
     </>
   );
