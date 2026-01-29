@@ -1,13 +1,20 @@
 import React, { useState } from "react";
 import { FiCopy } from "react-icons/fi";
+import useFetch from "../hooks/useFetch/useFetch";
 
 function PasteForm() {
-  const [pasteContent, setPasteContent] = useState("");
+  const [formContent, setFormContent] = useState({
+    max_views: "",
+    ttl_seconds: "",
+    content: "",
+  });
   const [pasteUrl, setPasteUrl] = useState("");
   const [formSubmit, setFormSubmit] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [fetchData, { loading }] = useFetch();
 
   const handleContentChange = (e) => {
-    setPasteContent(e.target.value);
+    setFormContent({ ...formContent, [e.target.name]: e.target.value });
   };
 
   const handlePasteUrlChange = (e) => {
@@ -15,16 +22,42 @@ function PasteForm() {
   };
 
   const handleReset = () => {
-    setPasteContent("");
+    setFormContent({ max_views: "", ttl_seconds: "", content: "" });
     setPasteUrl("");
     setFormSubmit("");
+    setCopied(false);
+  };
+
+  const copyTxt = async () => {
+    const copiedTxt = await navigator.clipboard.writeText(pasteUrl);
+    console.log("COPIED", copiedTxt);
+    setCopied(true);
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (!pasteContent) return;
+    if (!formContent.content) return;
     setFormSubmit(true);
-    console.log("Submitted");
+    const updatedFormData = {
+      content: formContent.content,
+      ttl_seconds: formContent.ttl_seconds
+        ? Number(formContent.ttl_seconds)
+        : null,
+      max_views: formContent.max_views ? Number(formContent.max_views) : null,
+    };
+    const config = {
+      url: "/pastes",
+      method: "POST",
+      data: updatedFormData,
+    };
+    fetchData(config)
+      .then((data) => {
+        console.log(data.data);
+        setPasteUrl(data.data.url);
+      })
+      .catch((error) => {
+        console.log("ERROR", error);
+      });
   };
 
   return (
@@ -37,7 +70,7 @@ function PasteForm() {
           <h2 className="text-lg font-semibold">Create A Paste</h2>
           <section className="w-full flex flex-row justify-center items-center">
             <input
-              className="paste-url-container border border-gray-400 h-10 w-130"
+              className="paste-url-container border border-gray-400 h-10 w-125"
               id="paste-url-container"
               name="paste-url-container"
               placeholder="Paste URL"
@@ -46,20 +79,48 @@ function PasteForm() {
             />
             <button
               type="button"
-              className={`${formSubmit ? "bg-sky-700 hover:bg-sky-900" : "bg-gray-400"} h-10 w-20 font-semibold text-white flex flex-row justify-evenly items-center`}
+              className={`${formSubmit ? "bg-sky-700 hover:bg-sky-900" : "bg-gray-400"} h-10 w-25 font-semibold text-white flex flex-row justify-evenly items-center`}
               disabled={!formSubmit}
+              onClick={copyTxt}
             >
               <FiCopy />
-              Copy
+              {!copied ? "Copy" : "Copied!!!"}
             </button>
+          </section>
+          <section className="w-150 flex flex-col justify-evenly items-start">
+            <label htmlFor="max_views">
+              Max Views(Don't enter anything for infinite)
+            </label>
+            <input
+              type="number"
+              min={0}
+              className="border border-gray-400 h-10 w-80"
+              placeholder="Enter Views: Eg. 1,2..."
+              value={formContent.max_views}
+              onChange={handleContentChange}
+              name="max_views"
+            />
+            <label htmlFor="ttl_seconds">
+              Expiry Time(In Seconds: Don't enter anything for indefinite)
+            </label>
+            <input
+              type="number"
+              min={0}
+              className="border border-gray-400 h-10 w-80"
+              placeholder="Enter Seconds: Eg. 5 minutes:300 seconds"
+              value={formContent.ttl_seconds}
+              onChange={handleContentChange}
+              name="ttl_seconds"
+            />
           </section>
           <section className="w-full flex flex-row justify-center items-center">
             <textarea
-              className="paste-content-container w-150 h-100 border border-gray-400"
+              className="paste-content-container w-150 h-80 border border-gray-400"
               id="paste-content-container"
-              name="paste-content-container"
-              value={pasteContent}
+              name="content"
+              value={formContent.content}
               onChange={handleContentChange}
+              required
               autoFocus
             ></textarea>
           </section>
