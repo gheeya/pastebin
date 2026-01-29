@@ -50,7 +50,7 @@ const createPaste = async (req, res) => {
       max_views: max_views ?? null,
       expiresAt,
     });
-
+    console.log("Reached here");
     return res.status(201).json({
       id: paste._id.toString(),
       url: `https://pastebin-backend-umber.vercel.app/p/${paste._id}`,
