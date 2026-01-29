@@ -4,10 +4,12 @@ const dotenv = require("dotenv").config();
 const { connectDB } = require("./db/dbConnection");
 const pasteRoute = require("./routes/pasteRoutes");
 const renderPasteRoute = require("./routes/renderPasteRoute");
+const cors = require("cors");
 
 const PORT = process.env.PORT || 8000;
 
 connectDB();
+app.use(cors());
 app.use(express.urlencoded({ extended: true }));
 app.use(express.json());
 app.use("/api", pasteRoute);

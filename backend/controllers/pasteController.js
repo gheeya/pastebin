@@ -2,167 +2,193 @@ const Paste = require("../models/Paste.model");
 const mongoose = require("mongoose");
 const escapeHtml = require("escape-html");
 
-const checkHealth = (req, res) => {
-  return res
-    .status(200)
-    .json({ status: true, msg: "The app health is optimal!!!" });
+const checkHealth = async (req, res) => {
+  try {
+    await Paste.findOne().select("_id").lean();
+    return res.status(200).json({ ok: true });
+  } catch (err) {
+    return res.status(500).json({ ok: false });
+  }
 };
 
+const getNow = (req) => {
+  if (process.env.TEST_MODE === "1" && req.headers["x-test-now-ms"]) {
+    return new Date(Number(req.headers["x-test-now-ms"]));
+  }
+  return new Date();
+};
 const createPaste = async (req, res) => {
   try {
     const { content, ttl_seconds, max_views } = req.body;
-    if (!content) {
-      return res
-        .status(400)
-        .json({ status: false, msg: "Missing content body in the request" });
+
+    if (!content || typeof content !== "string" || !content.trim()) {
+      return res.status(400).json({ error: "Invalid content" });
     }
-    if (ttl_seconds && (!Number.isFinite(ttl_seconds) || ttl_seconds < 1)) {
-      return res.status(400).json({
-        status: false,
-        msg: "Invalid ttl_seconds format and/or value",
-      });
+
+    if (
+      ttl_seconds !== undefined &&
+      (!Number.isInteger(ttl_seconds) || ttl_seconds < 1)
+    ) {
+      return res.status(400).json({ error: "Invalid ttl_seconds" });
     }
-    if (max_views && (!Number.isFinite(max_views) || max_views < 1)) {
-      return res
-        .status(400)
-        .json({ status: false, msg: "Invalid max_views format and/or value" });
+
+    if (
+      max_views !== undefined &&
+      (!Number.isInteger(max_views) || max_views < 1)
+    ) {
+      return res.status(400).json({ error: "Invalid max_views" });
     }
-    const newPaste = await Paste.create({ content, ttl_seconds, max_views });
-    const id = newPaste._id;
-    res.status(200).json({
-      status: true,
-      msg: "Paste created successfully",
-      id,
-      url: `/api/pastes/${id}`,
+
+    let expiresAt = null;
+    if (ttl_seconds) {
+      expiresAt = new Date(Date.now() + ttl_seconds * 1000);
+    }
+
+    const paste = await Paste.create({
+      content,
+      ttl_seconds: ttl_seconds ?? null,
+      max_views: max_views ?? null,
+      expiresAt,
     });
-  } catch (error) {
-    console.log("ERROR CREATING PASTE", error.message);
-    res.status(500).json({ status: false, msg: "Internal Server Error" });
+
+    return res.status(201).json({
+      id: paste._id.toString(),
+      url: `/p/${paste._id}`,
+    });
+  } catch (err) {
+    console.error("ERROR CREATING PASTE", err);
+    return res.status(500).json({ error: "Internal Server Error" });
+  }
+};
+const getAllPastes = async (req, res) => {
+  try {
+    const now = getNow(req);
+
+    const pastes = await Paste.find({
+      $and: [
+        {
+          $or: [
+            { max_views: null },
+            { $expr: { $lt: ["$views", "$max_views"] } },
+          ],
+        },
+        {
+          $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
+        },
+      ],
+    })
+      .select("_id content expiresAt max_views views createdAt")
+      .lean();
+
+    return res.status(200).json({
+      pastes: pastes.map((p) => ({
+        id: p._id.toString(),
+        content: p.content,
+        remaining_views: p.max_views === null ? null : p.max_views - p.views,
+        expires_at: p.expiresAt ? p.expiresAt.toISOString() : null,
+      })),
+    });
+  } catch (err) {
+    console.error("ERROR FETCHING ALL PASTES", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
 
 const getPasteById = async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).json({ status: false, msg: "Invalid/Missing ID" });
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(400).json({ error: "Invalid ID" });
     }
-    const paste = await Paste.findByIdAndUpdate(
-      { _id: id },
-      [
-        {
-          $set: {
-            max_views: {
-              $cond: [
-                {
-                  $and: [
-                    { $ne: ["$max_views", null] },
-                    { $gt: ["$max_views", 0] },
-                  ],
-                },
-                { $subtract: ["$max_views", 1] },
-                "$max_views",
-              ],
-            },
-            exhaustedViewCnt: {
-              $cond: [
-                {
-                  $eq: ["$max_views", 0],
-                },
-                true,
-                false,
-              ],
-            },
-            exhaustedTime: {
-              $cond: [
-                {
-                  $lte: [
-                    {
-                      $add: [
-                        "$createdAt",
-                        { $multiply: ["$ttl_seconds", 1000] },
-                      ],
-                    },
-                    "$$NOW",
-                  ],
-                },
-                true,
-                false,
-              ],
-            },
+
+    const now = getNow(req);
+
+    const paste = await Paste.findOneAndUpdate(
+      {
+        _id: id,
+        $and: [
+          {
+            $or: [
+              { max_views: null },
+              { $expr: { $lt: ["$views", "$max_views"] } },
+            ],
           },
-        },
-      ],
-      { new: true, updatePipeline: true },
+          {
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
+          },
+        ],
+      },
+      { $inc: { views: 1 } },
+      { new: true },
     );
-    console.log("THIS IS THE PASTE WITH GIVEN ID", {
-      ...paste,
-      createdAt: paste.createdAt.toLocaleString("en-IN", {
-        timeZone: "Asia/Kolkata",
-      }),
-    });
-    if (!paste || paste.exhaustedViewCnt || paste.exhaustedTime) {
-      return res.status(404).json({
-        status: false,
-        msg: "Paste with the given ID not found/expired",
-      });
+
+    if (!paste) {
+      return res.status(404).json({ error: "Paste not found or unavailable" });
     }
-    let expires_at = paste.ttl_seconds
-      ? new Date(paste.createdAt + paste.ttl_seconds * 1000)
-      : "never";
-    expires_at = expires_at.toLocaleString("en-IN", {
-      timeZone: "Asia/Kolkata",
-    });
-    const pasteOp = {
+
+    return res.status(200).json({
       content: paste.content,
-      remaining_views: paste.max_views ?? "infinite",
-      expires_at,
-    };
-    res
-      .status(200)
-      .json({ status: true, msg: "Paste returned successfully", ...pasteOp });
-  } catch (error) {
-    console.log("ERROR GETTING PASTE", error.message);
-    res.status(500).json({ status: false, msg: "Internal Server Error" });
+      remaining_views:
+        paste.max_views === null ? null : paste.max_views - paste.views,
+      expires_at: paste.expiresAt ? paste.expiresAt.toISOString() : null,
+    });
+  } catch (err) {
+    console.error("ERROR GETTING PASTE", err);
+    return res.status(500).json({ error: "Internal Server Error" });
   }
 };
-
 const renderPaste = async (req, res) => {
   try {
-    const id = req.params.id;
-    if (!id || !mongoose.Types.ObjectId.isValid(id)) {
-      return res.status(400).send(`<!DOCTYPE html>
-        <html>
-      <body>
-      <h1>400: Invalid/Missing ID</h1>
-      </body>
-    </html>`);
+    const { id } = req.params;
+
+    if (!mongoose.Types.ObjectId.isValid(id)) {
+      return res.status(404).send("<h1>404</h1>");
     }
-    const paste = await Paste.findById({ _id: id });
-    console.log("This is the paste", paste);
-    if (!paste || paste.exhaustedViewCnt || paste.exhaustedTime) {
-      return res.status(404).send(`<!DOCTYPE html>
-        <html>
-      <body>
-      <h1>404: Paste Not Found/Expired</h1>
-      </body>
-    </html>`);
+
+    const now = getNow(req);
+
+    const paste = await Paste.findOneAndUpdate(
+      {
+        _id: id,
+        $and: [
+          {
+            $or: [
+              { max_views: null },
+              { $expr: { $lt: ["$views", "$max_views"] } },
+            ],
+          },
+          {
+            $or: [{ expiresAt: null }, { expiresAt: { $gt: now } }],
+          },
+        ],
+      },
+      { $inc: { views: 1 } },
+      { new: true },
+    );
+
+    if (!paste) {
+      return res.status(404).send("<h1>404: Paste Not Found</h1>");
     }
-    res.status(200).send(`<!DOCTYPE html>
-    <html>
-    <body>
-    <p>${escapeHtml(paste.content)}</p>
-    </body>
-    </html>`);
-  } catch (error) {
-    console.log("ERROR RENDERING HTML", error.message);
-    res.status(500).send(`<!DOCTYPE html>
-    <html>
-    <body>
-    <h1>Internal Server Error</h1>
-    </body>
-    </html>`);
+
+    return res.status(200).send(`
+      <!DOCTYPE html>
+      <html>
+        <body>
+          <pre>${escapeHtml(paste.content)}</pre>
+        </body>
+      </html>
+    `);
+  } catch (err) {
+    console.error(err);
+    return res.status(500).send("<h1>500</h1>");
   }
 };
 
-module.exports = { checkHealth, createPaste, getPasteById, renderPaste };
+module.exports = {
+  checkHealth,
+  createPaste,
+  getPasteById,
+  renderPaste,
+  getAllPastes,
+};
