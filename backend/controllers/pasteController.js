@@ -26,16 +26,13 @@ const createPaste = async (req, res) => {
     }
 
     if (
-      ttl_seconds !== undefined &&
+      ttl_seconds != null &&
       (!Number.isInteger(ttl_seconds) || ttl_seconds < 1)
     ) {
       return res.status(400).json({ error: "Invalid ttl_seconds" });
     }
 
-    if (
-      max_views !== undefined &&
-      (!Number.isInteger(max_views) || max_views < 1)
-    ) {
+    if (max_views != null && (!Number.isInteger(max_views) || max_views < 1)) {
       return res.status(400).json({ error: "Invalid max_views" });
     }
 
