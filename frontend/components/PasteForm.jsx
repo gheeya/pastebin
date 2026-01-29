@@ -26,12 +26,12 @@ function PasteForm() {
     fetchData(config).then((data) => {
       setAllPastes(data.data.pastes);
     });
-  }, [fetchData, pasteUrl]);
+  }, [fetchData]);
 
   useEffect(() => {
     if (!selectedPaste?.content) return;
     setFormContent({ ...formContent, ...selectedPaste });
-    setPasteUrl(`/api/pastes/${selectedPaste.id}`);
+    setPasteUrl(`/p/${selectedPaste.id}`);
   }, [selectedPaste]);
 
   const handleContentChange = (e) => {
@@ -58,6 +58,7 @@ function PasteForm() {
     e.preventDefault();
     if (!formContent.content) return;
     setFormSubmit(true);
+
     const updatedFormData = {
       content: formContent.content,
       ttl_seconds: formContent.ttl_seconds
@@ -65,11 +66,13 @@ function PasteForm() {
         : null,
       max_views: formContent.max_views ? Number(formContent.max_views) : null,
     };
+
     const config = {
       url: "/pastes",
       method: "POST",
       data: updatedFormData,
     };
+
     fetchData(config)
       .then((data) => {
         setPasteUrl(data.data.url);
@@ -87,18 +90,19 @@ function PasteForm() {
           onSubmit={handleSubmit}
         >
           <h2 className="text-lg font-semibold">Create A Paste</h2>
+
           <section className="w-full flex flex-row justify-center items-center">
             <input
               className="paste-url-container border border-gray-400 h-10 w-125"
-              id="paste-url-container"
-              name="paste-url-container"
               placeholder="Paste URL"
               value={pasteUrl}
               onChange={handlePasteUrlChange}
             />
             <button
               type="button"
-              className={`${formSubmit ? "bg-sky-700 hover:bg-sky-900" : "bg-gray-400"} h-10 w-25 font-semibold text-white flex flex-row justify-evenly items-center`}
+              className={`${
+                formSubmit ? "bg-sky-700 hover:bg-sky-900" : "bg-gray-400"
+              } h-10 w-25 font-semibold text-white flex flex-row justify-evenly items-center`}
               disabled={!formSubmit}
               onClick={copyTxt}
             >
@@ -106,43 +110,38 @@ function PasteForm() {
               {!copied ? "Copy" : "Copied!!!"}
             </button>
           </section>
+
           <section className="w-150 flex flex-col justify-evenly items-start">
-            <label htmlFor="max_views">
-              Max Views(Don't enter anything for infinite)
-            </label>
+            <label>Max Views(Don't enter anything for infinite)</label>
             <input
               type="number"
               min={0}
               className="border border-gray-400 h-10 w-80"
-              placeholder="Enter Views: Eg. 1,2..."
               value={formContent.max_views}
               onChange={handleContentChange}
               name="max_views"
             />
-            <label htmlFor="ttl_seconds">
+            <label>
               Expiry Time(In Seconds: Don't enter anything for indefinite)
             </label>
             <input
               type="number"
               min={0}
               className="border border-gray-400 h-10 w-80"
-              placeholder="Enter Seconds: Eg. 5 minutes:300 seconds"
               value={formContent.ttl_seconds}
               onChange={handleContentChange}
               name="ttl_seconds"
             />
           </section>
-          <section className="w-full flex flex-row justify-center items-center">
-            <textarea
-              className="paste-content-container w-150 h-80 border border-gray-400"
-              id="paste-content-container"
-              name="content"
-              value={formContent.content}
-              onChange={handleContentChange}
-              required
-              autoFocus
-            ></textarea>
-          </section>
+
+          <textarea
+            className="paste-content-container w-150 h-80 border border-gray-400"
+            name="content"
+            value={formContent.content}
+            onChange={handleContentChange}
+            required
+          />
+
           <button
             type="button"
             onClick={handleReset}
@@ -150,6 +149,7 @@ function PasteForm() {
           >
             Clear Paste
           </button>
+
           <button
             type="submit"
             className="bg-green-700 hover:bg-green-900 w-150 h-10 font-semibold text-white rounded-md"
@@ -158,6 +158,7 @@ function PasteForm() {
           </button>
         </form>
       </article>
+
       <article className="paste-container flex flex-row justify-center items-center">
         <article className="paste w-170 h-160 flex flex-col justify-start items-center">
           <h2 className="text-lg font-semibold">Recent Pastes</h2>
@@ -167,17 +168,15 @@ function PasteForm() {
                 Loading ...
               </h2>
             ) : (
-              allPastes?.map((p) => {
-                return (
-                  <PasteItem
-                    key={p._id}
-                    id={p._id}
-                    content={p.content}
-                    createdAt={p.createdAt}
-                    setSelectedPaste={setSelectedPaste}
-                  />
-                );
-              })
+              allPastes?.map((p) => (
+                <PasteItem
+                  key={p.id || p._id}
+                  id={p.id || p._id}
+                  content={p.content}
+                  createdAt={p.createdAt}
+                  setSelectedPaste={setSelectedPaste}
+                />
+              ))
             )}
           </article>
         </article>
