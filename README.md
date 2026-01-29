@@ -182,5 +182,5 @@ across requests and works correctly in serverless environments.
 
 ## Deployment
 
-- Backend deployed on Vercel from the backend directory
-- Frontend deployed on Vercel from the frontend directory
+- Backend deployed on Vercel from the backend directory : https://pastebin-backend-umber.vercel.app/
+- Frontend deployed on Vercel from the frontend directory : https://pastebin-frontend-beta.vercel.app/
