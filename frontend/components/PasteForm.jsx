@@ -4,23 +4,35 @@ import useFetch from "../hooks/useFetch/useFetch";
 import PasteItem from "./PasteItem";
 
 function PasteForm() {
-  const [formContent, setFormContent] = useState({
-    max_views: "",
-    ttl_seconds: "",
-    content: "",
-  });
   const [pasteUrl, setPasteUrl] = useState("");
   const [formSubmit, setFormSubmit] = useState(false);
   const [copied, setCopied] = useState(false);
   const [fetchData, { loading }] = useFetch();
   const [allPastes, setAllPastes] = useState([]);
+  const [selectedPaste, setSelectedPaste] = useState({
+    max_views: "",
+    ttl_seconds: "",
+    content: "",
+    id: "",
+  });
+  const [formContent, setFormContent] = useState({
+    max_views: "",
+    ttl_seconds: "",
+    content: "",
+  });
+
   useEffect(() => {
     const config = { url: "/pastes", method: "GET" };
     fetchData(config).then((data) => {
-      console.log("This is the returned data", [...data.data.pastes]);
       setAllPastes(data.data.pastes);
     });
-  }, [fetchData]);
+  }, [fetchData, pasteUrl]);
+
+  useEffect(() => {
+    if (!selectedPaste?.content) return;
+    setFormContent({ ...formContent, ...selectedPaste });
+    setPasteUrl(`/api/pastes/${selectedPaste.id}`);
+  }, [selectedPaste]);
 
   const handleContentChange = (e) => {
     setFormContent({ ...formContent, [e.target.name]: e.target.value });
@@ -38,8 +50,7 @@ function PasteForm() {
   };
 
   const copyTxt = async () => {
-    const copiedTxt = await navigator.clipboard.writeText(pasteUrl);
-    console.log("COPIED", copiedTxt);
+    await navigator.clipboard.writeText(pasteUrl);
     setCopied(true);
   };
 
@@ -61,7 +72,6 @@ function PasteForm() {
     };
     fetchData(config)
       .then((data) => {
-        console.log(data.data);
         setPasteUrl(data.data.url);
       })
       .catch((error) => {
@@ -160,10 +170,11 @@ function PasteForm() {
               allPastes?.map((p) => {
                 return (
                   <PasteItem
-                    key={p.id}
-                    id={p.id}
+                    key={p._id}
+                    id={p._id}
                     content={p.content}
                     createdAt={p.createdAt}
+                    setSelectedPaste={setSelectedPaste}
                   />
                 );
               })

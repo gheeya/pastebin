@@ -49,3 +49,10 @@ main {
 .rcnt-paste-container::webkit-scrollbar {
   display: none;
 }
+
+.paste-item-container {
+  display: grid;
+  grid-template-rows: 100%;
+  grid-template-columns: 2fr 1fr;
+  place-items: center;
+}
